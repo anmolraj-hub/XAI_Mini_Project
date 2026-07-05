@@ -1,13 +1,6 @@
 """
-XAI Mini Project - Step 2: Data Analysis
-AIFB Dataset | Strategy 1: GNN Explainability
+Step 2: Data Analysis
 
-Answers:
-  - How many triples?
-  - What node types exist?
-  - What edge (predicate) types exist?
-  - How many nodes per type?
-  - Class distribution for the classification task
 """
 
 import os
@@ -92,7 +85,7 @@ def class_distribution(g: Graph) -> pd.DataFrame:
     dst = [str(o) for _, p, o in g.triples((None, AFFILIATION_URI, None))]
     counts = Counter(dst)
 
-    # Map full URI → human-readable label
+    # Map full URI -> human-readable label
     name_pred = rdf.term.URIRef("http://swrc.ontoware.org/ontology#name")
     label_map = {}
     for group_uri in counts:
@@ -147,7 +140,7 @@ def plot_top_predicates(df: pd.DataFrame, n: int = 15,
 # Sample some triples for intuition
 def show_sample_triples(g: Graph, predicate_uri: str, n: int = 5):
     pred = rdf.term.URIRef(predicate_uri)
-    print(f"── Sample triples for <{predicate_uri.split('#')[-1]}> ──")
+    print(f"Sample triples for <{predicate_uri.split('#')[-1]}>")
     for i, (s, p, o) in enumerate(g.triples((None, pred, None))):
         print(f"  {str(s).split('/')[-1]:40s}  →  {str(o).split('/')[-1]}")
         if i >= n - 1:

@@ -1,9 +1,5 @@
 """
-XAI Mini Project - Step 5: Explanation Evaluation
-AIFB Dataset | Strategy 1: GNN Explainability
-
-This file evaluates explanations for the SAME FastRGCN model that is trained in
-model_training.py and explained in explanations.py.
+Step 5: Explanation Evaluation
 
 Metrics:
   1. Fidelity+  - prediction changes when important edges are REMOVED
@@ -29,7 +25,7 @@ from torch_geometric.explain import Explainer, GNNExplainer
 from torch_geometric.nn import FastRGCNConv
 
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# Config
 DATA_ROOT = "./data/pyg_aifb"
 MODEL_PATH = "./models/model_rgcn.pt"
 HIDDEN_DIM = 16
@@ -43,7 +39,7 @@ torch.use_deterministic_algorithms(True, warn_only=True)  # reproducible CPU run
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-# ── Model definitions: must match model_training.py and explanations.py ───────
+# Model definitions
 class FastRGCN(torch.nn.Module):
     def __init__(self, num_nodes, emb_dim, hidden_channels,
                  out_channels, num_relations):
@@ -74,7 +70,7 @@ class FastRGCNExplainable(torch.nn.Module):
         return self.conv2(x, edge_index, edge_type)
 
 
-# ── Loading ───────────────────────────────────────────────────────────────────
+# Loading
 def load_model_and_data():
     dataset = Entities(root=DATA_ROOT, name="AIFB")
     data = dataset[0].to(device)
@@ -103,7 +99,7 @@ def load_model_and_data():
     model = FastRGCNExplainable(full_model.conv1, full_model.conv2).to(device)
     model.eval()
 
-    print("✅ Loaded saved FastRGCN model for explanation evaluation.")
+    print("Loaded saved FastRGCN model for explanation evaluation.")
     print(f"   Nodes          : {data.num_nodes:,}")
     print(f"   Edges          : {data.edge_index.shape[1]:,}")
     print(f"   Relation types : {num_relations}")
@@ -111,7 +107,7 @@ def load_model_and_data():
     return model, data, x
 
 
-# ── Explainer and node selection ──────────────────────────────────────────────
+# Explainer and node selection
 def make_explainer(model, epochs=EXPLAINER_EPOCHS):
     return Explainer(
         model=model,
@@ -144,7 +140,7 @@ def select_correct_test_nodes(model, data, x, n=20):
     return selected
 
 
-# ── Metrics ───────────────────────────────────────────────────────────────────
+# Metrics
 @torch.no_grad()
 def get_pred(model, x, edge_index, edge_type, node_idx):
     model.eval()
@@ -154,7 +150,6 @@ def get_pred(model, x, edge_index, edge_type, node_idx):
 
 def fidelity_plus(model, data, x, node_idx, edge_mask,
                   threshold=EDGE_IMPORTANCE_THRESHOLD):
-    """Good if prediction changes when important edges are removed."""
     full_pred = get_pred(
         model, x, data.edge_index, data.edge_type, node_idx)
 
@@ -171,7 +166,6 @@ def fidelity_plus(model, data, x, node_idx, edge_mask,
 
 def fidelity_minus(model, data, x, node_idx, edge_mask,
                    threshold=EDGE_IMPORTANCE_THRESHOLD):
-    """Good if prediction stays the same using only important edges."""
     full_pred = get_pred(
         model, x, data.edge_index, data.edge_type, node_idx)
 
@@ -187,19 +181,13 @@ def fidelity_minus(model, data, x, node_idx, edge_mask,
 
 
 def sparsity(edge_mask, threshold=EDGE_IMPORTANCE_THRESHOLD):
-    """Fraction of edges not selected as important. Higher is more compact."""
+    """Fraction of edges not selected as important."""
     important_edges = (edge_mask > threshold).sum().item()
     return 1.0 - (important_edges / len(edge_mask))
 
 
 def stability(explainer, data, x, node_idx, runs=1, base_mask=None):
-    """Cosine similarity between repeated edge masks. Higher is more stable.
-
-    If base_mask is given, it is reused as one of the compared masks, so only
-    `runs` additional explainer optimisations are needed. With the default
-    (base_mask + runs=1) this compares exactly one pair of masks, the same
-    statistic as two fresh runs, at a third less compute per node.
-    """
+    """Cosine similarity between repeated edge masks. Higher is more stable."""
     masks = [base_mask] if base_mask is not None else []
     for _ in range(runs):
         exp = explainer(
@@ -220,13 +208,13 @@ def stability(explainer, data, x, node_idx, runs=1, base_mask=None):
     return float(np.mean(sims)) if sims else 1.0
 
 
-# ── Evaluation ────────────────────────────────────────────────────────────────
+# Evaluation
 def evaluate_explanations(model, data, x, n_nodes=20):
     explainer = make_explainer(model)
     node_indices = select_correct_test_nodes(model, data, x, n=n_nodes)
     records = []
 
-    print(f"── Evaluating {len(node_indices)} FastRGCN explanations ─────────────")
+    print(f"Evaluating {len(node_indices)} FastRGCN explanations")
     for node_idx in node_indices:
         exp = explainer(
             x=x,
@@ -283,13 +271,13 @@ def plot_metrics(df, save_path="plots/eval_metrics.png"):
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close()
-    print(f"✅ Saved metrics plot to {save_path}")
+    print(f"Saved metrics plot to {save_path}")
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# Main
 if __name__ == "__main__":
     model, data, x = load_model_and_data()
     df = evaluate_explanations(model, data, x, n_nodes=20)
     plot_metrics(df)
     df.to_csv("results/explanation_evaluation.csv", index=False)
-    print("✅ Results saved to results/explanation_evaluation.csv")
+    print("Results saved to results/explanation_evaluation.csv")

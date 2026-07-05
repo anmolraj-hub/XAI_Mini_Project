@@ -1,30 +1,6 @@
 """
-XAI Mini Project - Step 1b: Deterministic dataset build + label mappings
-AIFB Dataset | Strategy 1: GNN Explainability
+Step 1b: Deterministic dataset build + label mappings
 
-Why this script exists
-----------------------
-PyG's ``Entities`` dataset assigns node ids via ``list(subjects.union(objects))``
-and class ids via ``{lab: i for i, lab in enumerate(list(labels_set))}``.
-Both use *unsorted Python sets*, whose iteration order is hash-randomised per
-process. The ordering is therefore random on every machine and cannot be
-reconstructed afterwards, which made the node labels and research-group names
-in our explanation plots wrong.
-
-This script rebuilds ``data.pt`` with a fully deterministic (sorted) ordering
-and writes the exact id -> URI mappings to ``data/mappings.json`` so that
-``explanations.py`` can attach provably correct labels.
-
-IMPORTANT: this deletes the old processed dataset, so the node ids change.
-You MUST re-run ``python model_training.py`` afterwards before running
-``explanations.py`` or ``evaluation.py``.
-
-Run order:
-    python setup.py
-    python build_mappings.py   <- this script
-    python model_training.py   <- must be re-run (node ids changed)
-    python explanations.py
-    python evaluation.py
 """
 
 import gzip
@@ -42,8 +18,7 @@ from torch_geometric.datasets import Entities
 DATA_ROOT = "./data/pyg_aifb"
 MAPPINGS_PATH = "./data/mappings.json"
 
-# Official AIFB research-group names, keyed by the local name of the
-# affiliation URI (see the mini-project slides, "AIFB Dataset" table).
+# Official AIFB research-group names, keyed by the local name of the affiliation URI 
 GROUP_NAMES = {
     "id1instance": "Business Information & Communication Systems",
     "id2instance": "Efficient Algorithms",
@@ -63,7 +38,6 @@ class DeterministicAIFB(Entities):
     loading the dataset through the plain ``Entities`` class.
     """
 
-    #: filled by ``process()``; read by ``main()`` after instantiation
     captured_mappings = None
 
     def process(self):
@@ -78,9 +52,6 @@ class DeterministicAIFB(Entities):
         freq = Counter(graph.predicates())
         relations = sorted(set(graph.predicates()),
                            key=lambda p: (-freq[p], str(p)))
-
-        # Deterministic node order: sorted URI/literal strings.
-        # PyG uses ``list(subjects.union(objects))`` (random set order).
         nodes = sorted({str(s) for s in graph.subjects()} |
                        {str(o) for o in graph.objects()})
 
@@ -158,7 +129,7 @@ def verify(data, mappings):
         f"class mapping mismatch:\n  expected {dict(expected)}\n"
         f"  actual   {dict(actual)}")
 
-    print("✅ Verification passed:")
+    print("Verification passed:")
     print(f"   {data.num_nodes:,} nodes mapped")
     print(f"   {len(mappings['relation_uri'])} relations "
           f"({num_edge_types} edge types) mapped")
@@ -176,7 +147,7 @@ def main():
               f"{processed_dir}")
         shutil.rmtree(processed_dir)
 
-    print("Rebuilding AIFB with deterministic node/relation/class ids ...")
+    print("Rebuilding AIFB with deterministic node/relation/class ids")
     dataset = DeterministicAIFB(root=DATA_ROOT, name="AIFB")
     data = dataset[0]
 
@@ -187,10 +158,9 @@ def main():
 
     Path(MAPPINGS_PATH).write_text(
         json.dumps(mappings, ensure_ascii=False), encoding="utf-8")
-    print(f"✅ Mappings saved to {MAPPINGS_PATH}")
+    print(f"Mappings saved to {MAPPINGS_PATH}")
     print()
-    print("⚠️  Node ids changed: re-run 'python model_training.py' before "
-          "'python explanations.py' / 'python evaluation.py'.")
+   
 
 
 if __name__ == "__main__":

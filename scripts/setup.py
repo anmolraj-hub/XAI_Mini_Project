@@ -1,6 +1,6 @@
 """
-XAI Mini Project - Step 1: Setup & Dataset Download
-AIFB Dataset | Strategy 1: GNN Explainability
+Step 1: Setup & Dataset Download
+
 """
 
 import subprocess

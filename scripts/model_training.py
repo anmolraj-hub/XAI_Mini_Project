@@ -1,7 +1,6 @@
 """
-XAI Mini Project - Step 3: Model Training & Evaluation
-AIFB Dataset | Strategy 1: GNN Explainability
-Uses FastRGCNConv which is compatible with GNNExplainer
+Step 3: Model Training & Evaluation
+
 """
 
 import torch
@@ -13,7 +12,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# Config
 DATA_ROOT    = "./data/pyg_aifb"
 HIDDEN_DIM   = 16
 EMB_DIM      = 32        # small embedding dimension instead of one-hot
@@ -30,14 +29,14 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
 
-# ── 1. Load dataset ───────────────────────────────────────────────────────────
+# Load dataset
 def load_dataset():
     dataset       = Entities(root=DATA_ROOT, name="AIFB")
     data          = dataset[0].to(device)
     num_relations = int(data.edge_type.max().item()) + 1
     num_classes   = int(data.train_y.max().item()) + 1
 
-    print(f"✅ Dataset loaded: AIFB")
+    print(f"Dataset loaded: AIFB")
     print(f"   Nodes          : {data.num_nodes:,}")
     print(f"   Edges          : {data.edge_index.shape[1]:,}")
     print(f"   Relation types : {num_relations}")
@@ -48,7 +47,7 @@ def load_dataset():
     return data, num_classes, num_relations
 
 
-# ── 2. FastRGCN with learnable embedding ─────────────────────────────────────
+# FastRGCN with learnable embedding
 class FastRGCN(torch.nn.Module):
     """
     2-layer FastRGCN with learnable node embeddings.
@@ -70,7 +69,7 @@ class FastRGCN(torch.nn.Module):
         return x
 
 
-# ── 3. Training loop ──────────────────────────────────────────────────────────
+# Training loop
 def train(model, data, node_ids, optimizer, criterion):
     model.train()
     optimizer.zero_grad()
@@ -92,7 +91,7 @@ def evaluate(model, data, node_ids, idx, labels):
     return acc, f1, preds, truth
 
 
-# ── 4. Full training run ──────────────────────────────────────────────────────
+# Full training run
 def run_training(data, num_classes, num_relations):
     # Node indices as input
     node_ids = torch.arange(data.num_nodes, device=device)
@@ -111,7 +110,7 @@ def run_training(data, num_classes, num_relations):
 
     train_losses, train_accs, test_accs = [], [], []
 
-    print("── Training FastRGCN ─────────────────────────────────")
+    print("Training FastRGCN")
     for epoch in range(1, EPOCHS + 1):
         loss = train(model, data, node_ids, optimizer, criterion)
         tr_acc, _, _, _ = evaluate(model, data, node_ids,
@@ -130,13 +129,13 @@ def run_training(data, num_classes, num_relations):
     return model, node_ids, train_losses, train_accs, test_accs
 
 
-# ── 5. Final evaluation ───────────────────────────────────────────────────────
+# Final evaluation
 def final_evaluation(model, data, node_ids):
     tr_acc, tr_f1, _, _ = evaluate(model, data, node_ids,
                                     data.train_idx, data.train_y)
     te_acc, te_f1, te_preds, te_truth = evaluate(model, data, node_ids,
                                                    data.test_idx, data.test_y)
-    print("── Final Evaluation ──────────────────────────────────")
+    print("Final Evaluation")
     print(f"  Train  Accuracy : {tr_acc:.4f}   Macro-F1 : {tr_f1:.4f}")
     print(f"  Test   Accuracy : {te_acc:.4f}   Macro-F1 : {te_f1:.4f}")
     print()
@@ -159,7 +158,7 @@ def final_evaluation(model, data, node_ids):
         print(classification_report(te_truth, te_preds, zero_division=0))
 
 
-# ── 6. Plot ───────────────────────────────────────────────────────────────────
+# Plot
 def plot_training(train_losses, train_accs, test_accs,
                   save_path="plots/training_curves.png"):
     epochs = range(1, len(train_losses) + 1)
@@ -180,10 +179,10 @@ def plot_training(train_losses, train_accs, test_accs,
     plt.tight_layout()
     plt.savefig(save_path)
     plt.close()
-    print(f"✅ Plot saved to {save_path}")
+    print(f"Plot saved to {save_path}")
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# Main
 if __name__ == "__main__":
     data, num_classes, num_relations = load_dataset()
 
@@ -194,7 +193,7 @@ if __name__ == "__main__":
     SEEDS = [0, 1, 2, 42, 123]
     runs = []
     for seed in SEEDS:
-        print(f"══ Seed {seed} ═══════════════════════════════════════")
+        print(f"Seed {seed}")
         torch.manual_seed(seed)
         model, node_ids, losses, tr_accs, te_accs = run_training(
             data, num_classes, num_relations)
@@ -212,7 +211,7 @@ if __name__ == "__main__":
     mean_f1 = sum(f1s) / len(f1s)
     std_f1 = (sum((f - mean_f1) ** 2 for f in f1s) / len(f1s)) ** 0.5
 
-    print("── Summary over seeds ────────────────────────────────")
+    print("Summary over seeds")
     for run in runs:
         print(f"  seed {run['seed']:>3}: acc {run['acc']:.4f} "
               f"| macro-F1 {run['f1']:.4f}")
@@ -235,4 +234,4 @@ if __name__ == "__main__":
         "emb_dim":        EMB_DIM,
         "seed":           chosen["seed"],
     }, MODEL_PATH)
-    print(f"✅ Model saved to {MODEL_PATH}")
+    print(f"Model saved to {MODEL_PATH}")

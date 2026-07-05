@@ -1,6 +1,5 @@
 """
-XAI Mini Project - Step 4: Human-readable explanations
-AIFB Dataset | Strategy 1: GNN Explainability
+ Step 4: Human-readable explanations
 
 This script explains the trained FastRGCN model from model_training.py.
 It produces:
@@ -35,7 +34,7 @@ from torch_geometric.nn import FastRGCNConv
 from torch_geometric.utils import k_hop_subgraph
 
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# Config
 DATA_ROOT = "./data/pyg_aifb"
 MODEL_PATH = "./models/model_rgcn.pt"
 MAPPINGS_PATH = "./data/mappings.json"
@@ -71,7 +70,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 CLASS_NAMES = []
 
 
-# ── Model definitions ─────────────────────────────────────────────────────────
+# Model definitions
 class FastRGCN(torch.nn.Module):
     """Same architecture as model_training.py, used to load saved weights."""
 
@@ -107,7 +106,7 @@ class FastRGCNExplainable(torch.nn.Module):
         return self.conv2(x, edge_index, edge_type)
 
 
-# ── Loading helpers ───────────────────────────────────────────────────────────
+# Loading helpers
 def load_model_and_data():
     dataset = Entities(root=DATA_ROOT, name="AIFB")
     data = dataset[0].to(device)
@@ -136,7 +135,7 @@ def load_model_and_data():
     model = FastRGCNExplainable(full_model.conv1, full_model.conv2).to(device)
     model.eval()
 
-    print("✅ FastRGCN model loaded.")
+    print("FastRGCN model loaded.")
     print(f"   Nodes          : {data.num_nodes:,}")
     print(f"   Edges          : {data.edge_index.shape[1]:,}")
     print(f"   Relation types : {num_relations}")
@@ -179,12 +178,7 @@ def _local_name_from_uri(uri):
 
 
 def _clean_label(text):
-    """Fixes common mojibake in AIFB literals, for example JÃ¼rgen -> Jürgen.
-
-    The broken strings are UTF-8 bytes that were decoded as cp1252/latin1,
-    so re-encoding with cp1252 (which, unlike latin1, also covers characters
-    such as 0x9C) and decoding as UTF-8 restores the original text.
-    """
+    """Cleaning the dataset."""
     text = str(text)
     if "Ã" in text or "Â" in text:
         for codec in ("cp1252", "latin1"):
@@ -199,8 +193,6 @@ def build_metadata():
     """
     Builds readable labels for persons, graph nodes, and relation types.
 
-    The target split files are the most reliable source for person node ids.
-    RDF literals are used to replace raw URIs with names and publication titles.
     """
     test_rows = _read_target_rows(TEST_SET_PATH)
     train_rows = _read_target_rows(TRAIN_SET_PATH)
@@ -225,11 +217,6 @@ def build_metadata():
     global CLASS_NAMES
     CLASS_NAMES = list(mappings["class_names"])
     uri_to_id = {uri: idx for idx, uri in enumerate(mappings["node_uri"])}
-
-    # NOTE: the 'id' column in the split TSVs is a small sequential id from
-    # the original dataset release, NOT a graph node id. Person labels are
-    # therefore keyed via the verified URI -> node-id mapping; using the TSV
-    # ids would overwrite the labels of unrelated (mostly literal) nodes.
     person_labels = {
         uri_to_id[row["person"]]:
             uri_to_label.get(row["person"],
@@ -243,10 +230,10 @@ def build_metadata():
     relation_labels = build_relation_labels(mappings)
     relation_descriptions = describe_relations(relation_labels)
 
-    print(f"✅ Loaded exact id mappings from {MAPPINGS_PATH}.")
-    print(f"✅ Class names: {CLASS_NAMES}")
-    print(f"✅ Loaded {len(person_labels)} target person labels.")
-    print(f"✅ Loaded {len(relation_labels)} relation labels.")
+    print(f"Loaded exact id mappings from {MAPPINGS_PATH}.")
+    print(f"Class names: {CLASS_NAMES}")
+    print(f"Loaded {len(person_labels)} target person labels.")
+    print(f"Loaded {len(relation_labels)} relation labels.")
     print()
     return {
         "test_people": test_people,
@@ -264,18 +251,11 @@ def build_metadata():
 def load_mappings():
     """Loads the exact node/relation/class mappings for the processed data.
 
-    PyG's default preprocessing assigns node ids and class ids in random set
-    order, which cannot be reconstructed after the fact. build_mappings.py
-    rebuilds the dataset deterministically and stores the exact ordering, so
-    the labels shown in explanations are guaranteed to be correct.
     """
     path = Path(MAPPINGS_PATH)
     if not path.exists():
         raise FileNotFoundError(
-            f"{MAPPINGS_PATH} not found. Run 'python build_mappings.py' and "
-            "then re-train with 'python model_training.py' first. Without "
-            "this mapping the node and class labels in the explanations "
-            "would be arbitrary (PyG assigns ids in random set order)."
+            f"{MAPPINGS_PATH}"
         )
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -293,11 +273,6 @@ def build_node_labels(uri_to_label, mappings):
 
 
 def build_relation_labels(mappings):
-    """Maps PyG edge-type integer -> readable predicate name.
-
-    Edge types 2i and 2i+1 are the forward and inverse direction of the
-    i-th relation, matching the Entities preprocessing.
-    """
     labels = {}
     for idx, rel in enumerate(mappings["relation_uri"]):
         short = str(rel).split("#")[-1].split("/")[-1]
@@ -317,7 +292,7 @@ def describe_relations(relation_labels):
     return descriptions
 
 
-# ── Prediction and node selection ─────────────────────────────────────────────
+# Prediction and node selection
 @torch.no_grad()
 def predict_classes(full_model, data):
     full_model.eval()
@@ -329,7 +304,6 @@ def predict_classes(full_model, data):
 
 
 def select_person_nodes(full_model, data, metadata, n=N_LOCAL_PERSONS):
-    """Selects correctly classified test-set persons where possible."""
     predictions, probabilities = predict_classes(full_model, data)
     person_labels = metadata["person_labels"]
     test_rows = metadata["test_rows"]
@@ -368,7 +342,7 @@ def select_person_nodes(full_model, data, metadata, n=N_LOCAL_PERSONS):
         selected.sort(key=lambda row: (not row["correct"], -row["confidence"]))
         selected = selected[:n]
 
-    print("✅ Selected people to explain:")
+    print("Selected people to explain:")
     for row in selected:
         pred_name = class_name(row["predicted"])
         marker = "correct" if row["correct"] else "model differs from label"
@@ -385,21 +359,14 @@ def class_name(class_idx):
 
 
 def receptive_field_edge_mask(node_id, data, num_hops=2):
-    """Boolean mask of edges inside the k-hop receptive field of node_id.
-
-    The trained model has two FastRGCN layers, so only edges within the
-    2-hop neighbourhood of the target node can influence its prediction.
-    GNNExplainer optimises a mask over *all* edges, and mask values outside
-    the receptive field are pure optimisation noise; they must be removed
-    before ranking edges for the explanation.
-    """
+    """Boolean mask of edges inside the k-hop receptive field of node_id."""
     _, _, _, edge_mask = k_hop_subgraph(
         int(node_id), num_hops, data.edge_index,
         num_nodes=data.num_nodes, flow="source_to_target")
     return edge_mask
 
 
-# ── Explainers ────────────────────────────────────────────────────────────────
+# Explainers
 def make_explainer(model, epochs):
     return Explainer(
         model=model,
@@ -421,7 +388,7 @@ def global_explanation(model, data, x, metadata,
     Averages GNNExplainer edge masks across training nodes and reports which
     relation types matter most overall.
     """
-    print("── Global Explanation ────────────────────────────────")
+    print("Global Explanation")
     explainer = make_explainer(model, GLOBAL_EXPLAINER_EPOCHS)
 
     edge_type = data.edge_type.detach().cpu().numpy()
@@ -474,12 +441,12 @@ def global_explanation(model, data, x, metadata,
     plt.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close()
 
-    print(f"\n✅ Global explanation saved to {save_path}\n")
+    print(f"\nGlobal explanation saved to {save_path}\n")
     return top_indices, relation_average
 
 
 def run_local_explanations(model, data, x, people):
-    print("── Local Person Explanations ─────────────────────────")
+    print("Local Person Explanations")
     explainer = make_explainer(model, LOCAL_EXPLAINER_EPOCHS)
     explanations = []
 
@@ -509,7 +476,7 @@ def run_local_explanations(model, data, x, people):
     return explanations
 
 
-# ── Explanation summaries ─────────────────────────────────────────────────────
+# Explanation summaries
 def extract_top_edges(exp, data, metadata, node_id, top_k=TOP_LOCAL_EDGES):
     edge_mask = exp.edge_mask.detach().cpu()
     in_field = receptive_field_edge_mask(node_id, data).cpu()
@@ -556,8 +523,6 @@ def make_plain_english_explanation(person, top_edges):
     if strongest is None:
         return (
             f"For {person['name']}, the model predicts {prediction}. "
-            "GNNExplainer did not isolate a strong individual edge, so this "
-            "case should be presented as a low-specificity explanation."
         )
 
     return (
@@ -623,7 +588,7 @@ def save_report(explanation_rows, global_top, global_scores, metadata,
         lines.append("")
 
     Path(path).write_text("\n".join(lines), encoding="utf-8")
-    print(f"✅ Human-readable report saved to {path}")
+    print(f"Human-readable report saved to {path}")
 
 
 def save_csv(explanation_rows, path=CSV_PATH):
@@ -656,10 +621,10 @@ def save_csv(explanation_rows, path=CSV_PATH):
                 "plain_english_explanation": row["plain_text"],
                 "top_relations": top_relations,
             })
-    print(f"✅ Summary CSV saved to {path}")
+    print(f"Summary CSV saved to {path}")
 
 
-# ── Visualisation ─────────────────────────────────────────────────────────────
+# Visualisation
 def _trim(text, max_length=28):
     text = str(text)
     return text if len(text) <= max_length else text[:max_length - 3] + "..."
@@ -671,9 +636,6 @@ def safe_filename(text):
 
 
 def visualise_local(person, top_edges, save_path):
-    # The graph is keyed on node ids, NOT on (trimmed) labels: two distinct
-    # nodes whose labels collide after trimming must not be merged, and
-    # parallel edges with different relations must not overwrite each other.
     graph = nx.DiGraph()
     target_id = person["node_id"]
     node_names = {target_id: _trim(person["name"])}
@@ -747,10 +709,10 @@ def visualise_local(person, top_edges, save_path):
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close()
-    print(f"✅ Local graph saved to {save_path}")
+    print(f"Local graph saved to {save_path}")
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# Main
 if __name__ == "__main__":
     model, full_model, data, x = load_model_and_data()
     metadata = build_metadata()
@@ -787,4 +749,4 @@ if __name__ == "__main__":
         },
         "./models/explanations.pt",
     )
-    print("✅ All done. Use person_explanations_report.md for your explanation.")
+    print("All done. Use person_explanations_report.md for your explanation.")
