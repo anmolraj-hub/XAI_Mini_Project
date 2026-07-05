@@ -1,0 +1,5 @@
+venv/
+__pycache__/
+*.pyc
+data/pyg_aifb/
+*.pt
