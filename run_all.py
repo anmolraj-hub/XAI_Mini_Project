@@ -93,8 +93,6 @@ def run_pipeline() -> None:
         os.makedirs(os.path.join(PROJECT_DIR, folder), exist_ok=True)
 
     # Reproducibility + no blocking plot windows:
-    #  - MPLBACKEND=Agg    -> plt.show() never blocks; figures still saved
-    #  - PYTHONHASHSEED=0  -> Python set/dict iteration order is fixed
     env = os.environ.copy()
     env["MPLBACKEND"] = "Agg"
     env["PYTHONHASHSEED"] = "0"
