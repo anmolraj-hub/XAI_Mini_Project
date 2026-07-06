@@ -74,7 +74,7 @@ the correct order (no plot windows to close – all figures are saved as PNGs):
 **1. Clone the repository:**
 
 ```bash
-git clone git@github.com:anmolraj-hub/XAI_Mini_Project.git
+git clone https://github.com/anmolraj-hub/XAI_Mini_Project.git
 cd XAI_Mini_Project
 ```
 **2. create a virtual environment first and run the run_all.py file**
