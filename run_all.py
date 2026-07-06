@@ -7,26 +7,7 @@ Usage
     python run_all.py                # installs all packages, then runs the full pipeline
     python run_all.py --no-install   # skip package installation, just run the pipeline
 
-This script:
-  1. Installs every required package (CPU-only PyTorch, PyTorch Geometric, etc.)
-  2. Runs all project scripts (in scripts/) in the correct order:
-        setup.py -> build_mapping.py -> data_analysis.py ->
-        model_training.py -> explanations.py -> evaluation.py
-  3. Uses a non-interactive matplotlib backend, so no plot windows pop up
-     and nothing has to be closed manually. All plots are saved to plots/.
-  4. Fixes all randomness sources (PYTHONHASHSEED, single-threaded
-     deterministic torch) so every run reproduces the exact same results,
-     including the same five explained persons shown in the report.
 
-Repository layout:
-    scripts/   all Python pipeline scripts
-    data/      AIFB dataset (downloaded by setup.py)
-    models/    trained model & explanation checkpoints (.pt)
-    plots/     all generated figures (.png)
-    results/   metrics CSVs and the generated explanations report
-    report/    the written project report (LaTeX)
-
-Works on Windows, macOS and Linux. No GPU required.
 """
 
 import os
@@ -34,12 +15,11 @@ import subprocess
 import sys
 import time
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
 
-# pip install commands, run in this order.
-# CPU wheels are used so this works on any machine without a GPU.
+# Configuration
+
+
+# pip install commands, run in this order..
 INSTALL_COMMANDS = [
     [sys.executable, "-m", "pip", "install", "--upgrade", "pip"],
     [sys.executable, "-m", "pip", "install",
@@ -74,9 +54,9 @@ SCRIPTS_DIR = os.path.join(PROJECT_DIR, "scripts")
 OUTPUT_DIRS = ["data", "models", "plots", "results"]
 
 
-# ---------------------------------------------------------------------------
+
 # Helpers
-# ---------------------------------------------------------------------------
+
 
 def banner(text: str) -> None:
     line = "=" * 70
@@ -154,9 +134,9 @@ def run_pipeline() -> None:
     print("            person_explanations_summary.csv, explanation_evaluation.csv")
 
 
-# ---------------------------------------------------------------------------
+
 # Main
-# ---------------------------------------------------------------------------
+
 
 if __name__ == "__main__":
     skip_install = "--no-install" in sys.argv

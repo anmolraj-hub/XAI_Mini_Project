@@ -53,8 +53,7 @@ def download_aifb():
 
 
 if __name__ == "__main__":
-    # Uncomment the line below the first time you run in Colab:
-    # install_dependencies()
+    
     dataset_dir = download_aifb()
     print(f"\nDataset directory: {dataset_dir}")
     print("Files:", os.listdir(dataset_dir))

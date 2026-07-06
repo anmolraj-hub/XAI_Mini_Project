@@ -1,12 +1,6 @@
 """
  Step 4: Human-readable explanations
 
-This script explains the trained FastRGCN model from model_training.py.
-It produces:
-  1. A global explanation of the most important relation types.
-  2. Local explanations for real AIFB person nodes.
-  3. A Markdown report with plain-English text you can use in a presentation.
-  4. PNG subgraph visualisations for each explained person.
 """
 
 import csv
@@ -41,7 +35,6 @@ MAPPINGS_PATH = "./data/mappings.json"
 FULL_GRAPH_PATH = "./data/aifbfixed_complete.n3"
 TEST_SET_PATH = "./data/pyg_aifb/aifb/raw/testSet.tsv"
 TRAIN_SET_PATH = "./data/pyg_aifb/aifb/raw/trainingSet.tsv"
-REPORT_PATH = "results/person_explanations_report.md"
 CSV_PATH = "results/person_explanations_summary.csv"
 
 HIDDEN_DIM = 16
@@ -538,59 +531,6 @@ def make_plain_english_explanation(person, top_edges):
     )
 
 
-def save_report(explanation_rows, global_top, global_scores, metadata,
-                path=REPORT_PATH):
-    relation_labels = metadata["relation_labels"]
-
-    lines = [
-        "# Person-Level GNNExplanations for AIFB",
-        "",
-        "This report explains the trained FastRGCN model in presentation-ready "
-        "language. Each person section states the model prediction and the "
-        "graph relations that GNNExplainer considered most important.",
-        "",
-        "## Global Explanation",
-        "",
-        "Across the sampled training nodes, these relation types had the highest "
-        "average importance:",
-        "",
-    ]
-
-    for rank, rel_id in enumerate(global_top, start=1):
-        label = relation_labels.get(int(rel_id), f"relation_{rel_id}")
-        lines.append(f"{rank}. **{label}** - importance "
-                     f"{global_scores[rel_id]:.4f}")
-
-    lines.extend(["", "## Local Person Explanations", ""])
-
-    for row in explanation_rows:
-        person = row["person"]
-        lines.append(f"### {person['name']} (node {person['node_id']})")
-        lines.append("")
-        lines.append(f"- Predicted group: **{class_name(person['predicted'])}**")
-        lines.append(f"- Model confidence: **{person['confidence']:.3f}**")
-        lines.append(f"- Ground-truth match: **{person['correct']}**")
-        lines.append(f"- Edges above importance threshold "
-                     f"{EDGE_IMPORTANCE_THRESHOLD} (within 2-hop receptive "
-                     f"field): **{person['important_edges']}**")
-        lines.append(f"- Table and figure show the top "
-                     f"{len(row['top_edges'])} edges by importance")
-        lines.append("")
-        lines.append(row["plain_text"])
-        lines.append("")
-        lines.append("| Rank | Source | Relation | Target | Importance |")
-        lines.append("|---:|---|---|---|---:|")
-        for rank, edge in enumerate(row["top_edges"], start=1):
-            lines.append(
-                f"| {rank} | {edge['source']} | {edge['relation']} | "
-                f"{edge['target']} | {edge['importance']:.3f} |"
-            )
-        lines.append("")
-
-    Path(path).write_text("\n".join(lines), encoding="utf-8")
-    print(f"Human-readable report saved to {path}")
-
-
 def save_csv(explanation_rows, path=CSV_PATH):
     fieldnames = [
         "node_id",
@@ -717,7 +657,7 @@ if __name__ == "__main__":
     model, full_model, data, x = load_model_and_data()
     metadata = build_metadata()
 
-    global_top, global_scores = global_explanation(model, data, x, metadata)
+    global_explanation(model, data, x, metadata)
 
     people = select_person_nodes(full_model, data, metadata, n=N_LOCAL_PERSONS)
     local_explanations = run_local_explanations(model, data, x, people)
@@ -738,7 +678,6 @@ if __name__ == "__main__":
         file_name = f"plots/local_exp_{safe_filename(person['name'])}.png"
         visualise_local(person, top_edges, file_name)
 
-    save_report(explanation_rows, global_top, global_scores, metadata)
     save_csv(explanation_rows)
 
     torch.save(
@@ -749,4 +688,4 @@ if __name__ == "__main__":
         },
         "./models/explanations.pt",
     )
-    print("All done. Use person_explanations_report.md for your explanation.")
+    print("All done")

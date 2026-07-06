@@ -1,4 +1,4 @@
-# CPU-only PyTorch (install with: pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu)
+# install with: pip install -r requirements.txt 
 torch
 torchvision
 torchaudio

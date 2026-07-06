@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 # Config
 DATA_ROOT    = "./data/pyg_aifb"
 HIDDEN_DIM   = 16
-EMB_DIM      = 32        # small embedding dimension instead of one-hot
+EMB_DIM      = 32        
 EPOCHS       = 50
 LR           = 0.01
 WEIGHT_DECAY = 0.0005

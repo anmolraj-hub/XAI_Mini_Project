@@ -74,7 +74,6 @@ class DeterministicAIFB(Entities):
         edge_index, edge_type = edge[:2], edge[2]
 
         # Deterministic class order: sorted affiliation URIs
-        # (id1instance < id2instance < ... < id5instance).
         labels_df = pd.read_csv(task_file, sep="\t")
         class_uris = sorted(set(labels_df["label_affiliation"]))
         labels_dict = {lab: i for i, lab in enumerate(class_uris)}
