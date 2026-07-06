@@ -101,9 +101,3 @@ The full pipeline takes roughly **25–30 minutes** on a laptop CPU (training
 All figures are saved to `plots/`.
 ---
 
-## References
-
-1. Schlichtkrull et al. (2018). *Modeling Relational Data with Graph Convolutional Networks.*
-2. Ying et al. (2019). *GNNExplainer: Generating Explanations for Graph Neural Networks.*
-3. Fey & Lenssen (2019). *Fast Graph Representation Learning with PyTorch Geometric.*
-4. Ristoski & Paulheim (2016). *RDF2Vec: RDF Graph Embeddings and Their Applications.*
